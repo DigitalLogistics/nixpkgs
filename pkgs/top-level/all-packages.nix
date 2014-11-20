@@ -10913,5 +10913,6 @@ let
   # Attributes for backward compatibility.
   adobeReader = adobe-reader;
 
+  hbase = callPackage ../servers/hbase {};
 
 }; in self; in pkgs

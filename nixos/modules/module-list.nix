@@ -90,6 +90,7 @@
   ./services/databases/4store.nix
   ./services/databases/couchdb.nix
   ./services/databases/firebird.nix
+  ./services/databases/hbase.nix
   ./services/databases/memcached.nix
   ./services/databases/mongodb.nix
   ./services/databases/redis.nix
