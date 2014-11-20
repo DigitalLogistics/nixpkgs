@@ -6459,6 +6459,9 @@ let
 
   bird = callPackage ../servers/bird { };
 
+  bosun = callPackage ../servers/monitoring/bosun {};
+  scollector = callPackage ../servers/monitoring/bosun/scollector.nix {};
+
   couchdb = callPackage ../servers/http/couchdb {
     spidermonkey = spidermonkey_185;
     python = python27;
