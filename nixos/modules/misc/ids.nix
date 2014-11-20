@@ -132,6 +132,7 @@
       hydra = 122;
       spiped = 123;
       hbase = 152;
+      opentsdb = 153;
 
       # When adding a uid, make sure it doesn't match an existing gid. And don't use uids above 399!
 
@@ -238,6 +239,7 @@
       hydra = 122;
       spiped = 123;
       hbase = 139;
+      opentsdb = 140;
 
       # When adding a gid, make sure it doesn't match an existing uid. And don't use gids above 399!
 

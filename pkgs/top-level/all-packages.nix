@@ -10913,6 +10913,8 @@ let
   # Attributes for backward compatibility.
   adobeReader = adobe-reader;
 
+  opentsdb = callPackage ../tools/misc/opentsdb {};
+
   hbase = callPackage ../servers/hbase {};
 
 }; in self; in pkgs

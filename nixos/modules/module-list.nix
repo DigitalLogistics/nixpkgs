@@ -96,6 +96,7 @@
   ./services/databases/redis.nix
   ./services/databases/mysql.nix
   ./services/databases/openldap.nix
+  ./services/databases/opentsdb.nix
   ./services/databases/postgresql.nix
   ./services/databases/virtuoso.nix
   ./services/databases/monetdb.nix
