@@ -134,6 +134,7 @@
       hbase = 152;
       opentsdb = 153;
       scollector = 154;
+      bosun = 155;
 
       # When adding a uid, make sure it doesn't match an existing gid. And don't use uids above 399!
 
@@ -242,6 +243,7 @@
       hbase = 139;
       opentsdb = 140;
       scollector = 151;
+      bosun = 152;
 
       # When adding a gid, make sure it doesn't match an existing uid. And don't use gids above 399!
 
