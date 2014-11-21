@@ -69,7 +69,8 @@ in {
       };
 
       collectors = mkOption {
-        default = "{}";
+        type = types.attrs;
+        default = {};
         example = literalExample "{ 0 = [ \"\${postgresStats}/bin/collect-stats\" ]; }";
         description = ''
           An attribute set mapping the frequency of collection to a list of
