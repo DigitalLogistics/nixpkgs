@@ -5,22 +5,27 @@
 , syslog ? false
 , moreheaders ? false
 , echo ? false
-, ngx_lua ? false }:
+, ngx_lua ? false
+, set_misc ? false
+, fluent ? false
+, pagespeed ? true
+, extraModules ? []
+}:
 
 with stdenv.lib;
 
 let
-  version = "1.6.2";
+  version = "1.8.0";
   mainSrc = fetchurl {
     url = "http://nginx.org/download/nginx-${version}.tar.gz";
-    sha256 = "060s77qxhkn02fjkcndsr0xppj2bppjzkj0gn84svrykb4lqqq5m";
+    sha256 = "1mgkkmmwkhmpn68sdvbd73ssv6lpqhh864fsyvc1ij4hk4is3k13";
   };
 
   rtmp-ext = fetchFromGitHub {
     owner = "arut";
     repo = "nginx-rtmp-module";
-    rev = "v1.1.5";
-    sha256 = "1d9ws4prxz22yq3nhh5h18jrs331zivrdh784l6wznc1chg3gphn";
+    rev = "v1.1.7";
+    sha256 = "0i0fa1znkj7cipy5nlkw4k40klhp9jzk28wxy2vrvd2jvh91x3ma";
   };
 
   dav-ext = fetchFromGitHub {
@@ -40,15 +45,36 @@ let
   moreheaders-ext = fetchFromGitHub {
     owner = "openresty";
     repo = "headers-more-nginx-module";
-    rev = "v0.25";
-    sha256 = "1d71y1i0smi4gkzz731fhn58gr03b3s6jz6ipnfzxxaizmgxm3rb";
+    rev = "v0.26";
+    sha256 = "0zhr3ai4xf5yghxvlbrwv8n06fgx33f1n1d4a6gmsczdfjzf8g6g";
   };
 
   echo-ext = fetchFromGitHub {
     owner = "openresty";
     repo = "echo-nginx-module";
-    rev = "v0.56";
-    sha256 = "03vaf1ffhkj2s089f90h45n079h3zw47h6y5zpk752f4ydiagpgd";
+    rev = "v0.57";
+    sha256 = "1q0f0zprcn0ypl2qh964cq186l3f40p0z7n7x22m8cxj367vf000";
+  };
+
+  lua-ext = fetchFromGitHub {
+    owner = "openresty";
+    repo = "lua-nginx-module";
+    rev = "v0.9.16";
+    sha256 = "0dvdam228jhsrayb22ishljdkgib08bakh8ygn84sq0c2xbidzlp";
+  };
+
+  set-misc-ext = fetchFromGitHub {
+    owner = "openresty";
+    repo = "set-misc-nginx-module";
+    rev = "v0.28";
+    sha256 = "1vixj60q0liri7k5ax85grj7q9vvgybkx421bwphbhai5xrjip96";
+  };
+
+  fluentd = fetchFromGitHub {
+    owner = "fluent";
+    repo = "nginx-fluentd-module";
+    rev = "8af234043059c857be27879bc547c141eafd5c13";
+    sha256 = "1ycb5zd9sw60ra53jpak1m73zwrjikwhrrh9q6266h1mlyns7zxm";
   };
 
   develkit-ext = fetchFromGitHub {
@@ -58,18 +84,25 @@ let
     sha256 = "1cqcasp4lc6yq5pihfcdw4vp4wicngvdc3nqg3bg52r63c1qrz76";
   };
 
-  lua-ext = fetchFromGitHub {
-    owner = "openresty";
-    repo = "lua-nginx-module";
-    rev = "v0.9.12";
-    sha256 = "0r07q1n3nvi7m3l8zk7nfk0z9kjhqknav61ys9lshh2ylsmz1lf4";
+  ngx-pagespeed =
+   fetchFromGitHub {
+    owner = "pagespeed";
+    repo = "ngx_pagespeed";
+    rev = "v1.9.32.6-beta";
+    sha256 = "08xvdmfpj7rhfm8zmvi5plysjx5qhmn2bw4cfnsshalwm7lixxm8";
+  };
+
+  pagespeedLib = fetchurl {
+    url = "https://dl.google.com/dl/page-speed/psol/1.9.32.6.tar.gz";
+    sha256 = "04lrxx843fqaxx2xxpxi9a0b3vcgybnq09450x0zz983kwd5la5j";
   };
 
 in
 
 stdenv.mkDerivation rec {
   name = "nginx-${version}";
-  src = mainSrc;
+  srcs = [mainSrc] ++ optional pagespeed pagespeedLib;
+  sourceRoot = "nginx-${version}";
 
   buildInputs =
     [ openssl zlib pcre libxml2 libxslt gd geoip
@@ -82,6 +115,9 @@ stdenv.mkDerivation rec {
   patches = if syslog then [ "${syslog-ext}/syslog-1.5.6.patch" ] else [];
 
   configureFlags = [
+    "--with-select_module"
+    "--with-poll_module"
+    "--with-threads"
     "--with-http_ssl_module"
     "--with-http_spdy_module"
     "--with-http_realip_module"
@@ -109,18 +145,22 @@ stdenv.mkDerivation rec {
     ++ optional moreheaders "--add-module=${moreheaders-ext}"
     ++ optional echo "--add-module=${echo-ext}"
     ++ optional ngx_lua "--add-module=${develkit-ext} --add-module=${lua-ext}"
-    ++ optional (elem stdenv.system (with platforms; linux ++ freebsd)) "--with-file-aio";
-
+    ++ optional set_misc "--add-module=${set-misc-ext}"
+    ++ optionals (elem stdenv.system (with platforms; linux ++ freebsd))
+        [ "--with-file-aio" "--with-aio_module" ]
+    ++ optional fluent "--add-module=${fluentd}"
+    ++ optional pagespeed "--add-module=${ngx-pagespeed}"
+    ++ (map (m: "--add-module=${m}") extraModules);
 
   additionalFlags = optionalString stdenv.isDarwin "-Wno-error=deprecated-declarations -Wno-error=conditional-uninitialized";
 
   preConfigure = ''
     export NIX_CFLAGS_COMPILE="$NIX_CFLAGS_COMPILE -I${libxml2}/include/libxml2 $additionalFlags"
-  '';
 
-  postInstall = ''
-    mv $out/sbin $out/bin
-  '';
+  '' + (optionalString pagespeed ''
+          export MOD_PAGESPEED_DIR="$(pwd)/../psol/include"
+          export PSOL_BINARY="$(pwd)/../psol/lib/Release/linux/${if stdenv.system == "x86_64-linux" then "x64" else "ia32"}/pagespeed_automatic.a"
+        '');
 
   meta = {
     description = "A reverse proxy and lightweight webserver";
